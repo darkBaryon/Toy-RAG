@@ -30,7 +30,7 @@ def main(embedding_api_key, chat_api_key, query, path='./database/embeddedVector
             logging.info(f"Found {len(similar_chunks)} similar chunks")
             for chunk in similar_chunks:
                 print(chunk)
-                print('*'*150)
+                print('*'*120)
         except Exception as e:
             logging.error(f"Error querying vectors: {str(e)}")
             return

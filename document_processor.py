@@ -101,6 +101,6 @@ if __name__ == '__main__':
     
     for chunk in chunks:
         print(chunk[:], len(chunk))
-        print('---')
+        print('-'*120)
         
     print(len(chunks))

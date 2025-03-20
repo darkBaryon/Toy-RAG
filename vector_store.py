@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import shutil
 from typing import List, Dict, Any
 from document_processor import ReadFile
 from embedding_service import ZhiPuAIEmbedding
@@ -199,10 +200,6 @@ class VectorBase:
         # 获取top-k结果
         top_k_indices = np.argsort(similarities)[-top_k:][::-1]  # 反转以获得降序排列
         return [loadedVectors[i][0] for i in top_k_indices]
-
-    def append_to_file(self, file_path: str, content: str):
-        with open(file_path, 'a') as f:
-            f.write(content + '\n')
             
 
 
@@ -212,7 +209,7 @@ if __name__ == '__main__':
     api_key = "3d5e610d6c3748d994b940cd038cf3f7.zWNI1CDqf92JSwdv"
     model = "embedding-3"
     
-    vectorBase = vectorBase()
+    vectorBase = VectorBase()
     
     vectorBase.addVector(path=path, api_key=api_key, model=model)
     
@@ -238,6 +235,15 @@ if __name__ == '__main__':
     message = [message]
     deepseek_api_key = 'sk-3c391edfe572451a843b0a2ddbac9050'
     client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
+    
+    ## compare the performance
+    response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": query}]
+        )
+    print(response.choices[0].message)
+    print('*'*100)
+    
     response = client.chat.completions.create(
             model="deepseek-chat",
             messages=message
