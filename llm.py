@@ -1,5 +1,3 @@
-# api.py
-
 from openai import OpenAI, chat
 
 
