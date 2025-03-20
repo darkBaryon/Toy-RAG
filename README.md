@@ -1,64 +1,54 @@
-# Tiny RAG
+# Toy-RAG
 
-一个轻量级的检索增强生成（RAG）实现，支持文档检索和问答功能。
+## 项目简介
+Toy-RAG 是一个基于向量检索的问答系统，旨在通过嵌入向量技术快速检索相关信息并生成回答。系统包含文档处理、向量化、向量存储和问答服务等模块。
 
-## 功能特点
+## 系统架构
+Toy-RAG 系统由以下几个核心模块组成：
+1. 文档处理模块：负责原始文档的读取、分块和预处理
+2. 向量化模块：将文本转换为向量表示
+3. 向量存储模块：存储和检索向量数据
+4. 问答服务模块：处理用户查询并生成回答
 
-- 基于向量数据库的文档检索
-- 使用 DeepSeek 进行智能问答
-- 支持中文文档处理
-- 灵活的文档嵌入和存储机制
+## 运行流程
+1. 初始化阶段：
+   - 读取原始文档
+   - 对文档进行分块处理
+   - 将文本块转换为向量
+   - 将向量存储到向量数据库中
+2. 问答阶段：
+   - 接收用户查询
+   - 将查询转换为向量
+   - 在向量数据库中检索最相似的文档片段
+   - 将检索结果传递给LLM生成最终回答
 
-## 项目结构
+## 文件说明
+- `main.py`: 程序入口，负责初始化系统和处理用户查询
+- `document_processor.py`: 文档处理模块，负责文档的读取和分块
+- `embedding_service.py`: 向量化模块，将文本转换为向量表示
+- `vector_store.py`: 向量存储模块，负责向量的存储和检索
+- `chat_service.py`: 问答服务模块，处理用户查询并生成回答
+- `config.py`: 配置文件，存储API密钥等配置信息
+- `path.py`: 路径管理模块，统一管理文件路径
 
-```
-tiny_rag/
-├── database/           # 存储向量数据和原始文件
-├── llm.py             # DeepSeek聊天模型实现
-├── main.py            # 主程序入口
-├── path.py            # 路径处理工具
-├── readFile.py        # 文件读取和处理
-├── vectorBase.py      # 向量数据库实现
-└── vectorization.py   # 文本向量化处理
-```
-
-## 环境配置
-
-### 必需的环境变量
-```bash
-ZHIPU_API_KEY=your_zhipu_api_key      # 智谱AI的API密钥，用于文本向量化
-DEEPSEEK_API_KEY=your_deepseek_api_key # DeepSeek的API密钥，用于问答生成
-```
+## 安装说明
+1. 克隆本仓库
+2. 安装依赖：`pip install -r requirements.txt`
+3. 配置API密钥：在`config.py`中设置`ZHIPUAI_API_KEY`和`DEEPSEEK_API_KEY`
+4. 初始化向量数据库：`python main.py --init`
 
 ## 使用方法
+1. 将原始文档放入`database/rawFile`目录
+2. 运行`python main.py`
+3. 根据提示输入问题，系统将返回相关答案
+4. 支持命令行参数：
+   - `--init`: 初始化向量数据库
+   - `--debug`: 开启调试模式
 
-1. 配置环境变量
-2. 准备文档数据，放入 `database/rawFile` 目录
-3. 运行程序：
-
-```python
-from main import main
-
-# 设置参数
-path = "database/rawFile"
-query = "你的问题"
-
-# 运行RAG
-main(path=path, 
-     embedding_api_key=zhipu_api_key, 
-     chat_api_key=deepseek_api_key, 
-     query=query)
-```
-
-## 工作流程
-
-1. 文档处理：系统读取并处理输入文档
-2. 向量化：使用智谱AI API将文档内容转换为向量
-3. 相似度检索：根据用户问题检索最相关的文档片段
-4. 问答生成：使用DeepSeek模型基于检索内容生成答案
-
-## 注意事项
-
-- 确保API密钥正确配置
-- 文档存放位置需符合项目结构要求
-- 检索结果默认返回top-5最相关片段
+## 贡献指南
+欢迎提交Pull Request。请确保代码风格一致，并添加适当的单元测试。
+贡献前请阅读以下指南：
+1. 使用PEP8代码风格
+2. 为新增功能添加单元测试
+3. 提交前确保所有测试通过
+4. 使用描述性的commit message

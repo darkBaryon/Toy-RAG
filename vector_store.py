@@ -1,72 +1,93 @@
 import os
 import sys
 import json
-import shutil
-import ujson
-from readFile import ReadFile
-from vectorization import ZhiPuAIEembedding
+from typing import List, Dict, Any
+from document_processor import ReadFile
+from embedding_service import ZhiPuAIEmbedding
+from config import Config
 from path import find_generated_path
 
 
-class vectorBase():
+class VectorBase:
+    MODEL = Config.ZHIPUAI_MODEL
+    API_KEY = Config.ZHIPUAI_API_KEY
     
-    '''
-    def __init__(self):
-    Initialize the vectorBase class
+    """Vector database management class responsible for vector storage, retrieval and management.
     
-    def getVector(self, model: str = "embedding-3"):
-    Calculate the embedding vector for a given text using ZhiPUAI's API.
+    Main functions:
+    - Calculate vector representations of text
+    - Store vectors to file system
+    - Load stored vectors
+    - Process vectorization of single files and folders
     
-    def saveVectors(self):
-    Save the embedded vectors to a file in the data/embeddedVector directory.
-    
-    def loadVectors(self, file_path: str):
-    Load the embedded vectors from a file in the data/embeddedVector directory.
-    
-    def queryVectors(self, query: str):
-    Query the embedded vectors for the most similar vector to the input query.
-    
-    '''
-    
-    API_KEY = "3d5e610d6c3748d994b940cd038cf3f7.zWNI1CDqf92JSwdv"
-    MODEL = "embedding-3"
+    Attributes:
+        vector_storage_dir (str): Vector storage directory
+        raw_file_dir (str): Raw file directory
+    """
     
     def __init__(self):
-        
-        self.api_key = self.API_KEY
-        self.model = self.MODEL
+        """Initialize vector database management class."""
+        self.vector_storage_dir = Config.VECTOR_STORAGE_DIR
+        self.raw_file_dir = Config.RAW_FILE_DIR
 
-    def calculate_vector(self, filepath: str = None, query: str = None):
-        # ReadFile类的split_text_into_chunks方法
-        # 使用 ZhiPUAI 的 API 计算嵌入向量
-        # 调用vectorization.py中的ZhiPuAIEembedding类
-        # 传入API key和chunk list
-        # 返回计算得到的嵌入向量
-        if filepath != None:
-            chunk_list = ReadFile(path=filepath).split_text_into_chunks()
-        elif query != None:
-            chunk_list = ReadFile(query=query).split_text_into_chunks()
-        chunk_list, embedded_vectors= ZhiPuAIEembedding(api_key=self.api_key, chunk_list=chunk_list).getVector(self.model) 
-        embedded_vectors_array = [[chunk_list[i], embedded_vectors[i][:]] for i in range(len(chunk_list))]
-        return embedded_vectors_array
+    def calculate_vector(self, filepath: str = None, query: str = None) -> List[List[Any]]:
+        """Calculate vector representation of text.
 
-    def saveVectors(self, filepath: str, embedded_vectors_array):
-        
-        # 保存嵌入向量到文件
-        generate_path = find_generated_path(filepath)
-        
-        folder_path = os.path.dirname(generate_path)
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-        with open(generate_path, 'w') as f:
-            json.dump(embedded_vectors_array, f)
-        print(f"Saved in {generate_path}.")
+        Args:
+            filepath: File path
+            query: Query text
+
+        Returns:
+            List[List[Any]]: List containing text chunks and corresponding vectors
+
+        Raises:
+            Exception: If text processing or vector calculation fails
+        """
+        try:
+            if filepath:
+                chunk_list = ReadFile(path=filepath).split_text_into_chunks()
+            elif query:
+                chunk_list = ReadFile(query=query).split_text_into_chunks()
+            else:
+                raise ValueError("Either filepath or query must be provided")
+
+            chunk_list, embedded_vectors = ZhiPuAIEmbedding(chunk_list).get_vectors()
+            return [[chunk_list[i], embedded_vectors[i]] for i in range(len(chunk_list))]
+        except Exception as e:
+            raise Exception(f"Error calculating vectors: {str(e)}")
+
+    def save_vectors(self, filepath: str, embedded_vectors_array: List[List[Any]]) -> str:
+        """Save vectors to the file system.
+
+        Args:
+            filepath: Path to the original file
+            embedded_vectors_array: Vector data
+
+        Returns:
+            str: Path to the saved file
+
+        Raises:
+            Exception: If there's an error during the save process
+        """
+        try:
+            generate_path = find_generated_path(filepath)
+            folder_path = os.path.dirname(generate_path)
+            
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+                
+            with open(generate_path, 'w') as f:
+                json.dump(embedded_vectors_array, f)
+                
+            return generate_path
+        except Exception as e:
+            raise Exception(Config.ERROR_MESSAGES["file_save_error"].format(str(e)))
         
     def addVector_single_file(self, filepath: str):
         
         # 计算嵌入向量
         embedded_vectors_array = self.calculate_vector(filepath)
-        self.saveVectors(filepath=filepath, embedded_vectors_array=embedded_vectors_array)
+        self.save_vectors(filepath=filepath, embedded_vectors_array=embedded_vectors_array)
         
         return embedded_vectors_array     
        
@@ -76,10 +97,10 @@ class vectorBase():
         if not os.path.exists(path):
             print(f"{path} not exists.")
             sys.exit(1)
-        if api_key != self.API_KEY:
+        if api_key != Config.ZHIPUAI_API_KEY:
             print(f"Wrong API_KEY.")
             sys.exit(2)
-        if model != self.MODEL:
+        if model != Config.ZHIPUAI_MODEL:
             print(f"Wrong model.")
             sys.exit(3)
         
@@ -103,8 +124,8 @@ class vectorBase():
     def deleteVector(self, raw_file_path):
         
         # Check if the path exists
-        if not os.path.exists(path):
-            print(f"{path} not exists.")
+        if not os.path.exists(raw_file_path):
+            print(f"{raw_file_path} not exists.")
             sys.exit(1)
         
         generated_file_path = find_generated_path(raw_file_path)
@@ -130,7 +151,7 @@ class vectorBase():
         if os.path.isfile(generated_file_path):
             if os.path.exists(generated_file_path):
                 with open(generated_file_path, 'r') as f:
-                    vector_array = ujson.load(f)
+                    vector_array = json.load(f)
                     print(f"Loaded {generated_file_path}")
                     return vector_array
             else:
@@ -147,25 +168,36 @@ class vectorBase():
                     file_path = os.path.join(root, file)
                     with open(file_path, 'r') as f:
                         data = f.read()
-                        vector_array = ujson.loads(data)
+                        vector_array = json.loads(data)
                         vector_list.extend(vector_array)
                     print(f"Loaded {file_path}")
             return vector_list
 
     def queryVectors(self, query: str, top_k: int = 10, file_path: str = "database/embeddedVector/"):
         # 使用嵌入向量计算相似度
-        # 这里需要实现具体的相似度计算逻辑
-        # 例如使用余弦相似度
         import numpy as np
-        query_vector = self.calculate_vector(query = query)
+        query_vector = self.calculate_vector(query=query)
         loadedVectors = self.loadVectors(file_path)
         
+        if not loadedVectors or not query_vector:
+            return []
+            
+        # 计算余弦相似度
         similarities = []
+        query_vec = np.array(query_vector[0][1])
+        query_norm = np.linalg.norm(query_vec)
+        
         for vector in loadedVectors:
-            similarity = np.dot(query_vector[0][1], vector[1]) / (np.linalg.norm(query_vector[0][1]) * np.linalg.norm(vector[1]))
-            similarities.append(similarity)
-        top_k_indices = np.argsort(similarities)[-top_k:]
-        print(top_k_indices)
+            vec = np.array(vector[1])
+            vec_norm = np.linalg.norm(vec)
+            if query_norm == 0 or vec_norm == 0:
+                similarities.append(0)
+            else:
+                similarity = np.dot(query_vec, vec) / (query_norm * vec_norm)
+                similarities.append(similarity)
+                
+        # 获取top-k结果
+        top_k_indices = np.argsort(similarities)[-top_k:][::-1]  # 反转以获得降序排列
         return [loadedVectors[i][0] for i in top_k_indices]
 
     def append_to_file(self, file_path: str, content: str):
